@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>수학 탐구 학습</title>
+  <link rel="stylesheet" href="common.css">
+  <style>
+    body { overflow: auto; }
+    .hub-body {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 36px 24px;
+      overflow: auto;
+    }
+    .hub-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      min-width: 0;
+    }
+    .hub-section { display: flex; flex-direction: column; gap: 12px; }
+    .hub-section-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .card-row { display: flex; gap: 14px; flex-wrap: wrap; }
+    .topic-card {
+      background: var(--panel-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 26px 18px 22px;
+      width: 165px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 9px;
+      text-decoration: none;
+      color: var(--text);
+      transition: box-shadow 0.18s, border-color 0.18s;
+    }
+    .topic-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 20px rgba(108,92,231,0.18);
+    }
+    .card-icon { font-size: 2.2rem; line-height: 1; }
+    .card-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.45;
+    }
+    .card-desc {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <span class="page-title">수학 탐구 학습</span>
+  </header>
+  <main class="hub-body">
+    <div class="hub-wrap">
+
+      <div class="hub-section">
+        <div class="hub-section-title">함수 탐구</div>
+        <div class="card-row">
+          <a href="exp-function/index.html" class="topic-card">
+            <span class="card-icon">📈</span>
+            <span class="card-name">지수함수 탐구</span>
+            <span class="card-desc">y = aˣ · 이동과 변환 탐구</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,58 @@
+/* ===== CSS 변수 (first-task 동일 팔레트) ===== */
+:root {
+  --accent: #6c5ce7;
+  --accent-dark: #5a4bd1;
+  --accent-light: #f0eeff;
+  --bg: #f8f9fa;
+  --panel-bg: #ffffff;
+  --border: #e2e8f0;
+  --text: #2d3748;
+  --text-muted: #718096;
+  --header-h: 48px;
+}
+
+/* ===== 리셋 + 기본 ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  background: var(--bg);
+  color: var(--text);
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== 헤더 ===== */
+.page-header {
+  height: var(--header-h);
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+.back-link {
+  position: absolute;
+  left: 14px;
+  padding: 5px 14px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.back-link:hover { background: var(--accent-dark); color: #fff; }
+.page-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ===== 캔버스 공통 ===== */
+canvas { display: block; }
