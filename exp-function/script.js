@@ -10,6 +10,11 @@ var selectedType = 'basic';
 var COLORS = ['#e53e3e', '#3182ce', '#38a169', '#d69e2e', '#805ad5', '#0987a0', '#dd6b20', '#4a5568'];
 var colorIdx = 0;
 
+var lines = [];
+var nextLineId = 1;
+var LINE_COLORS = ['#718096', '#c05621', '#2b6cb0', '#276749', '#6b46c1'];
+var lineColorIdx = 0;
+
 /* ===== 캔버스 & 뷰 ===== */
 var canvas = document.getElementById('graphCanvas');
 var ctx = canvas.getContext('2d');
@@ -180,6 +185,24 @@ function draw() {
         ctx.textAlign = 'right';
         ctx.fillText('0', labelX, labelY);
     }
+
+    /* --- 수평 직선 (y = c) --- */
+    lines.forEach(function (ln) {
+        var p = toPixel(0, ln.y);
+        if (p.py < -5 || p.py > h + 5) return;
+        ctx.strokeStyle = ln.color;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([7, 4]);
+        ctx.beginPath();
+        ctx.moveTo(0, p.py);
+        ctx.lineTo(w, p.py);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = ln.color;
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('y = ' + fmtCoord(ln.y), w - 8, p.py - 4);
+    });
 
     /* --- 식 곡선 --- */
     formulas.forEach(function (f) {
@@ -528,6 +551,53 @@ function renderPointList() {
         list.appendChild(item);
     });
 }
+
+/* ===== 직선 관리 ===== */
+function addLine(y) {
+    lines.push({
+        id: nextLineId++,
+        y: y,
+        color: LINE_COLORS[(lineColorIdx++) % LINE_COLORS.length]
+    });
+    renderLineList();
+    draw();
+}
+
+function removeLine(id) {
+    lines = lines.filter(function (ln) { return ln.id !== id; });
+    renderLineList();
+    draw();
+}
+
+function renderLineList() {
+    var list = document.getElementById('lineList');
+    list.innerHTML = '';
+    lines.forEach(function (ln) {
+        var item = document.createElement('div');
+        item.className = 'pt-item';
+        item.innerHTML =
+            '<span class="pt-dot" style="background:' + ln.color + ';border-radius:2px;"></span>' +
+            '<span class="pt-coords">y = ' + fmtCoord(ln.y) + '</span>' +
+            '<button class="pt-del-btn" title="삭제">×</button>';
+        item.querySelector('.pt-del-btn').addEventListener('click', function () {
+            removeLine(ln.id);
+        });
+        list.appendChild(item);
+    });
+}
+
+document.getElementById('btnAddLine').addEventListener('click', function () {
+    var raw = document.getElementById('lineYInput').value.trim();
+    var err = document.getElementById('lineError');
+    err.textContent = '';
+    var v = parseFrac(raw);
+    if (isNaN(v)) { err.textContent = '숫자 또는 분수를 입력해주세요 (예: 0, 1/2)'; return; }
+    addLine(v);
+    document.getElementById('lineYInput').value = '';
+});
+document.getElementById('lineYInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('btnAddLine').click();
+});
 
 /* ===== 자유 점 입력 ===== */
 document.getElementById('btnAddFreePt').addEventListener('click', function () {
