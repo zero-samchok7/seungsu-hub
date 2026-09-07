@@ -81,6 +81,34 @@ function fmtLabel(n) {
 function fmtCoord(n) { return parseFloat(n.toFixed(3)).toString(); }
 function fmtA(n)     { return parseFloat(n.toFixed(3)).toString(); }
 
+/* ===== 역함수 계산 ===== */
+function evalInverse(f, x) {
+    var a = f.a;
+    if (a <= 0) return null;
+    // log_a(x-p)+q 의 역함수: y = a^(x-q) + p
+    var xVal = f.type === 'shifted' ? x - f.q : x;
+    var y = Math.pow(a, xVal);
+    if (!isFinite(y) || isNaN(y)) return null;
+    if (f.type === 'shifted') y += f.p;
+    return y;
+}
+
+function inverseHTML(f) {
+    var aStr = fmtA(f.a);
+    if (f.type === 'basic') {
+        return 'y = ' + aStr + '<sup>x</sup>';
+    }
+    var expPart = 'x';
+    if (f.q !== 0) {
+        expPart = f.q > 0 ? 'x&minus;' + fmtA(f.q) : 'x+' + fmtA(Math.abs(f.q));
+    }
+    var pPart = '';
+    if (f.p !== 0) {
+        pPart = f.p > 0 ? ' + ' + fmtA(f.p) : ' &minus; ' + fmtA(Math.abs(f.p));
+    }
+    return 'y = ' + aStr + '<sup>' + expPart + '</sup>' + pPart;
+}
+
 /* ===== 식 라벨 HTML ===== */
 function formulaHTML(f) {
     var aStr = fmtA(f.a);
@@ -216,6 +244,30 @@ function draw() {
         ctx.stroke();
     });
 
+    /* --- 역함수 곡선 (점선) --- */
+    formulas.forEach(function (f) {
+        if (!f.visible || !f.showInverse) return;
+        ctx.strokeStyle = f.color;
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = 'round';
+        ctx.setLineDash([6, 4]);
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        var started = false;
+        for (var px = 0; px <= w; px++) {
+            var wx = viewX + (px - w / 2) / zoom;
+            var wy = evalInverse(f, wx);
+            if (wy === null || !isFinite(wy)) { started = false; continue; }
+            var py = h / 2 - (wy - viewY) * zoom;
+            if (!isFinite(py)) { started = false; continue; }
+            if (!started) { ctx.moveTo(px, py); started = true; }
+            else { ctx.lineTo(px, py); }
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+    });
+
     /* --- 점 --- */
     points.forEach(function (pt) {
         var p = toPixel(pt.x, pt.y);
@@ -327,7 +379,8 @@ function addFormula() {
         type: selectedType,
         a: 2, p: 0, q: 0,
         color: nextColor(),
-        visible: true
+        visible: true,
+        showInverse: false
     };
     formulas.push(f);
     renderFormulaList();
@@ -388,9 +441,11 @@ function renderFormulaList() {
               '</div>'
             : '';
 
+        var invLabelStyle = f.showInverse ? '' : 'display:none;';
         item.innerHTML =
             '<div class="fi-header">' +
             '  <span class="fi-label">' + formulaHTML(f) + '</span>' +
+            '  <button class="fi-btn inv-btn' + (f.showInverse ? ' inv-on' : '') + '" title="역함수 표시">↔</button>' +
             '  <button class="fi-btn vis-btn' + (f.visible ? '' : ' vis-off') + '" title="표시/숨김">●</button>' +
             '  <button class="fi-btn del" title="삭제">×</button>' +
             '</div>' +
@@ -399,7 +454,8 @@ function renderFormulaList() {
             '  <input type="range" class="a-sl" min="0.1" max="10" step="0.01" value="' + f.a + '">' +
             '  <input type="text" class="a-inp frac-inp" value="' + fmtA(f.a) + '">' +
             '</div>' +
-            shiftedHTML;
+            shiftedHTML +
+            '<div class="inv-label" style="' + invLabelStyle + 'margin-top:5px;font-size:0.72rem;opacity:0.75;color:' + f.color + ';">역함수: <span class="inv-formula">' + inverseHTML(f) + '</span></div>';
 
         var aSl  = item.querySelector('.a-sl');
         var aInp = item.querySelector('.a-inp');
@@ -409,6 +465,7 @@ function renderFormulaList() {
             aSl.value  = Math.min(10, Math.max(0.1, v));
             aInp.value = fmtA(v);
             item.querySelector('.fi-label').innerHTML = formulaHTML(f);
+            item.querySelector('.inv-formula').innerHTML = inverseHTML(f);
             updateCurveSelect(f);
             updateCurvePoints(f.id);
             draw();
@@ -428,6 +485,7 @@ function renderFormulaList() {
                 if (!isNaN(v)) {
                     f.p = v;
                     item.querySelector('.fi-label').innerHTML = formulaHTML(f);
+                    item.querySelector('.inv-formula').innerHTML = inverseHTML(f);
                     updateCurveSelect(f);
                     updateCurvePoints(f.id);
                     draw();
@@ -438,12 +496,20 @@ function renderFormulaList() {
                 if (!isNaN(v)) {
                     f.q = v;
                     item.querySelector('.fi-label').innerHTML = formulaHTML(f);
+                    item.querySelector('.inv-formula').innerHTML = inverseHTML(f);
                     updateCurveSelect(f);
                     updateCurvePoints(f.id);
                     draw();
                 }
             });
         }
+
+        item.querySelector('.inv-btn').addEventListener('click', function () {
+            f.showInverse = !f.showInverse;
+            this.classList.toggle('inv-on', f.showInverse);
+            item.querySelector('.inv-label').style.display = f.showInverse ? '' : 'none';
+            draw();
+        });
 
         item.querySelector('.vis-btn').addEventListener('click', function () {
             f.visible = !f.visible;
