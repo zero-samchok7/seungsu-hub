@@ -244,6 +244,29 @@ function draw() {
         ctx.stroke();
     });
 
+    /* --- y = x 기준선 (역함수 표시 시) --- */
+    var anyInverse = formulas.some(function (f) { return f.visible && f.showInverse; });
+    if (anyInverse) {
+        var x1 = viewX - w / (2 * zoom);
+        var x2 = viewX + w / (2 * zoom);
+        var p1 = toPixel(x1, x1);
+        var p2 = toPixel(x2, x2);
+        ctx.strokeStyle = '#a0aec0';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(p1.px, p1.py);
+        ctx.lineTo(p2.px, p2.py);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#a0aec0';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'left';
+        var lblX = Math.min(p2.px - 4, w - 32);
+        var lblY = Math.max(p2.py + 14, 14);
+        ctx.fillText('y = x', lblX, lblY);
+    }
+
     /* --- 역함수 곡선 (점선) --- */
     formulas.forEach(function (f) {
         if (!f.visible || !f.showInverse) return;
