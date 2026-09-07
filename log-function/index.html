@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>로그함수 탐구</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    .page-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
+    }
+    .panel-left {
+      width: 272px;
+      flex-shrink: 0;
+      background: var(--panel-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .type-bar {
+      display: flex;
+      padding: 8px;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .type-btn {
+      flex: 1;
+      padding: 6px 4px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .type-btn:first-child { border-radius: 7px 0 0 7px; }
+    .type-btn:last-child  { border-radius: 0 7px 7px 0; border-left: none; }
+    .type-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .type-btn:last-child.active { border-left: 1.5px solid var(--accent); }
+    .panel-scroll {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    .p-section {
+      padding: 10px 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .p-section:last-child { border-bottom: none; }
+    .p-sec-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .formula-item {
+      background: var(--bg);
+      border-radius: 8px;
+      border-left: 3px solid #cbd5e0;
+      padding: 7px 8px 8px;
+      margin-bottom: 6px;
+    }
+    .fi-header {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 7px;
+    }
+    .fi-label {
+      flex: 1;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--text);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .fi-label sub { font-size: 0.72em; }
+    .fi-btn {
+      width: 22px; height: 22px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--panel-bg);
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.12s;
+    }
+    .fi-btn:hover { background: var(--bg); }
+    .fi-btn.del:hover { background: #fff5f5; color: #e53e3e; border-color: #fed7d7; }
+    .fi-btn.vis-off { opacity: 0.35; }
+    .fi-param {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 5px;
+      font-size: 0.8rem;
+    }
+    .fi-param:last-child { margin-bottom: 0; }
+    .fi-param > label {
+      width: 14px;
+      font-weight: 700;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      font-style: italic;
+    }
+    .fi-param input[type=range] {
+      flex: 1;
+      accent-color: var(--accent);
+      min-width: 0;
+      cursor: pointer;
+    }
+    .fi-param .frac-inp {
+      width: 52px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 2px 5px;
+      font-size: 0.8rem;
+      text-align: center;
+      color: var(--text);
+      outline: none;
+      flex-shrink: 0;
+      background: var(--panel-bg);
+    }
+    .fi-param .frac-inp:focus { border-color: var(--accent); }
+    .add-formula-btn {
+      width: 100%;
+      padding: 6px;
+      border: 1.5px dashed var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .add-formula-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+    .pt-sub-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 5px;
+      margin-top: 10px;
+    }
+    .pt-sub-label:first-of-type { margin-top: 0; }
+    .pt-input-row {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 4px;
+    }
+    .pt-input-row input[type=text] {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 0.82rem;
+      color: var(--text);
+      outline: none;
+      min-width: 0;
+      background: var(--panel-bg);
+    }
+    .pt-input-row input[type=text]:focus { border-color: var(--accent); }
+    .pt-input-row input[type=text]::placeholder { color: #b0bec5; font-size: 0.78rem; }
+    .curve-row {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .curve-row select {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 0.78rem;
+      color: var(--text);
+      outline: none;
+      background: var(--panel-bg);
+      min-width: 0;
+    }
+    .curve-row select:focus { border-color: var(--accent); }
+    .curve-row .frac-inp {
+      width: 58px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 0.78rem;
+      text-align: center;
+      color: var(--text);
+      outline: none;
+      flex-shrink: 0;
+      background: var(--panel-bg);
+    }
+    .curve-row .frac-inp:focus { border-color: var(--accent); }
+    .pt-add-btn {
+      padding: 5px 10px;
+      border: 1.5px solid var(--accent);
+      border-radius: 6px;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.12s;
+    }
+    .pt-add-btn:hover { background: var(--accent); color: #fff; }
+    .error-msg {
+      color: #e53e3e;
+      font-size: 0.74rem;
+      min-height: 1em;
+      margin-bottom: 2px;
+    }
+    .pt-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 7px;
+      background: var(--bg);
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-size: 0.8rem;
+    }
+    .pt-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .pt-coords {
+      flex: 1;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      color: var(--text);
+    }
+    .pt-del-btn {
+      width: 18px; height: 18px;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.12s;
+    }
+    .pt-del-btn:hover { background: #fff5f5; color: #e53e3e; }
+    .panel-graph {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+      overflow: hidden;
+      background: #fff;
+    }
+    #graphCanvas {
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      display: block;
+    }
+    .graph-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .gc-btn {
+      width: 28px; height: 28px;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted);
+      transition: all 0.12s;
+      user-select: none;
+    }
+    .gc-btn:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+    .coord-hint {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      pointer-events: none;
+      user-select: none;
+      background: rgba(255,255,255,0.8);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <a href="../index.html" class="back-link">← 목록</a>
+    <span class="page-title">로그함수 탐구</span>
+  </header>
+
+  <main class="page-body">
+
+    <div class="panel-left">
+      <div class="type-bar">
+        <button class="type-btn active" id="typeBtnBasic">y = log<sub>a</sub>(x)</button>
+        <button class="type-btn" id="typeBtnShifted">y = log<sub>a</sub>(x−p)+q</button>
+      </div>
+
+      <div class="panel-scroll">
+
+        <div class="p-section">
+          <div class="p-sec-label">식</div>
+          <div id="formulaList"></div>
+          <button class="add-formula-btn" id="btnAddFormula">+ 식 추가</button>
+        </div>
+
+        <div class="p-section">
+          <div class="p-sec-label">직선 (x = c)</div>
+          <div class="pt-input-row">
+            <input type="text" id="lineXInput" placeholder="x값 (예: 0, 1/2)">
+            <button class="pt-add-btn" id="btnAddLine">추가</button>
+          </div>
+          <div class="error-msg" id="lineError"></div>
+          <div id="lineList"></div>
+        </div>
+
+        <div class="p-section">
+          <div class="p-sec-label">점</div>
+
+          <div class="pt-sub-label">자유 점</div>
+          <div class="pt-input-row">
+            <input type="text" id="freePtInput" placeholder="(x, y) 또는 그래프 클릭">
+            <button class="pt-add-btn" id="btnAddFreePt">추가</button>
+          </div>
+          <div class="error-msg" id="freePtError"></div>
+
+          <div class="pt-sub-label">곡선 위 점</div>
+          <div class="curve-row">
+            <select id="curvePtSelect">
+              <option value="">식 선택</option>
+            </select>
+            <input type="text" id="curvePtX" class="frac-inp" placeholder="x (예: 1/2)">
+            <button class="pt-add-btn" id="btnAddCurvePt">추가</button>
+          </div>
+          <div class="error-msg" id="curvePtError"></div>
+
+          <div id="pointList" style="margin-top:8px;"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="panel-graph">
+      <canvas id="graphCanvas"></canvas>
+      <div class="graph-controls">
+        <button class="gc-btn" id="btnZoomIn"  title="확대">+</button>
+        <button class="gc-btn" id="btnZoomOut" title="축소">−</button>
+        <button class="gc-btn" id="btnReset"   title="초기화">⌂</button>
+      </div>
+      <div class="coord-hint" id="coordHint"></div>
+    </div>
+
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
