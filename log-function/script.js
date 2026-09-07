@@ -468,7 +468,7 @@ function renderFormulaList() {
         item.innerHTML =
             '<div class="fi-header">' +
             '  <span class="fi-label">' + formulaHTML(f) + '</span>' +
-            '  <button class="fi-btn inv-btn' + (f.showInverse ? ' inv-on' : '') + '" title="역함수 표시">↔</button>' +
+            '  <button class="inv-badge inv-btn' + (f.showInverse ? ' inv-on' : '') + '">' + (f.showInverse ? '역함수 ✓' : '역함수') + '</button>' +
             '  <button class="fi-btn vis-btn' + (f.visible ? '' : ' vis-off') + '" title="표시/숨김">●</button>' +
             '  <button class="fi-btn del" title="삭제">×</button>' +
             '</div>' +
@@ -530,6 +530,7 @@ function renderFormulaList() {
         item.querySelector('.inv-btn').addEventListener('click', function () {
             f.showInverse = !f.showInverse;
             this.classList.toggle('inv-on', f.showInverse);
+            this.textContent = f.showInverse ? '역함수 ✓' : '역함수';
             item.querySelector('.inv-label').style.display = f.showInverse ? '' : 'none';
             draw();
         });

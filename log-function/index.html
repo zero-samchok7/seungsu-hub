@@ -101,7 +101,23 @@
     .fi-btn:hover { background: var(--bg); }
     .fi-btn.del:hover { background: #fff5f5; color: #e53e3e; border-color: #fed7d7; }
     .fi-btn.vis-off { opacity: 0.35; }
-    .fi-btn.inv-on { background: var(--accent-light); color: var(--accent); border-color: #c5b8ff; }
+    .inv-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 7px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--panel-bg);
+      white-space: nowrap;
+      flex-shrink: 0;
+      user-select: none;
+      transition: all 0.12s;
+      line-height: 1.6;
+    }
+    .inv-badge:hover { border-color: var(--accent); color: var(--accent); }
+    .inv-badge.inv-on { background: var(--accent-light); color: var(--accent); border-color: #c5b8ff; }
     .fi-param {
       display: flex;
       align-items: center;
