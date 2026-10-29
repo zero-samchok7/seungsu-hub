@@ -16,6 +16,7 @@
     u: 1,            // 펴짐 진행도 (0: 감김, 1: 완전히 펴짐)
     divT: 0,         // ÷ 반지름 진행도
     showRatio: false,
+    showOuter: false, // 반지름이 1이 아닌 원(바깥 원) 표시
     drag: null       // 'angle' | 'radius' | null
   };
 
@@ -62,7 +63,7 @@
   /* ---------- 왼쪽: 원 ---------- */
   var RMAX = 3.0;
   function circleGeom() {
-    var s = Math.min(sizeC.w, sizeC.h) / 2 / (RMAX + 0.5);
+    var s = Math.min(sizeC.w, sizeC.h) / 2 / ((st.showOuter ? RMAX : 1) + 0.5);
     return { cx: sizeC.w / 2, cy: sizeC.h / 2, s: s };
   }
 
@@ -78,8 +79,10 @@
     c.stroke();
 
     // 바깥 원 / 안쪽 원
-    c.strokeStyle = '#8fdccb'; c.lineWidth = 1.5;
-    c.beginPath(); c.arc(cx, cy, R * s, 0, 2 * PI); c.stroke();
+    if (st.showOuter) {
+      c.strokeStyle = '#8fdccb'; c.lineWidth = 1.5;
+      c.beginPath(); c.arc(cx, cy, R * s, 0, 2 * PI); c.stroke();
+    }
     c.strokeStyle = BORDER; c.lineWidth = 1.5;
     c.beginPath(); c.arc(cx, cy, s, 0, 2 * PI); c.stroke();
 
@@ -101,21 +104,23 @@
       c.strokeStyle = dirColor();
       c.lineWidth = 6;
       c.beginPath(); c.arc(cx, cy, s + off, 0, -d * st.dir, st.dir === 1); c.stroke();
-      c.strokeStyle = OUTER;
-      c.lineWidth = 5;
-      c.beginPath(); c.arc(cx, cy, R * s + off, 0, -d * st.dir, st.dir === 1); c.stroke();
+      if (st.showOuter) {
+        c.strokeStyle = OUTER;
+        c.lineWidth = 5;
+        c.beginPath(); c.arc(cx, cy, R * s + off, 0, -d * st.dir, st.dir === 1); c.stroke();
+      }
     }
 
     // 반지름 선
     var ex = Math.cos(th), ey = -Math.sin(th);
     c.strokeStyle = dirColor(); c.lineWidth = 1.5; c.setLineDash([5, 4]);
-    c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + ex * R * s, cy + ey * R * s); c.stroke();
+    c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + ex * (st.showOuter ? R : 1) * s, cy + ey * (st.showOuter ? R : 1) * s); c.stroke();
     c.setLineDash([]);
 
     // 기준점 (각 0)
     c.fillStyle = '#2d3748';
     c.beginPath(); c.arc(cx + s, cy, 3.5, 0, 2 * PI); c.fill();
-    c.beginPath(); c.arc(cx + R * s, cy, 3.5, 0, 2 * PI); c.fill();
+    if (st.showOuter) { c.beginPath(); c.arc(cx + R * s, cy, 3.5, 0, 2 * PI); c.fill(); }
     c.fillStyle = MUTED; c.font = '600 17px sans-serif'; c.textAlign = 'left';
     c.fillText('0', cx + s + 6, cy + 20);
 
@@ -129,12 +134,14 @@
       c.fillStyle = '#fff'; c.strokeStyle = col; c.lineWidth = 3;
       c.beginPath(); c.arc(cx + ex * rad * s, cy + ey * rad * s, r, 0, 2 * PI); c.fill(); c.stroke();
     }
-    dot(R, 8, OUTER); dot(1, 12, dirColor());
+    if (st.showOuter) dot(R, 8, OUTER);
+    dot(1, 12, dirColor());
 
     // 반지름 라벨
     c.font = '700 17px sans-serif'; c.textAlign = 'left';
     c.fillStyle = MUTED;
     c.fillText('r = 1', cx + 8, cy - 10);
+    if (st.showOuter) {
     c.fillStyle = OUTER;
     c.fillText('r = ' + R.toFixed(1), cx + R * s * Math.cos(-PI / 4 + 0.0) - 8, cy + R * s * Math.sin(PI / 4) + 34);
 
@@ -144,6 +151,7 @@
     c.beginPath(); c.arc(hx, hy, 12, 0, 2 * PI); c.fill(); c.stroke();
     c.fillStyle = '#fff'; c.font = '700 15px sans-serif'; c.textAlign = 'center';
     c.fillText('↔', hx, hy + 5);
+    }
 
     // 각 표시
     if (st.deg > 0) {
@@ -159,8 +167,8 @@
   /* ---------- 오른쪽: 수직선 ---------- */
   function lineGeom() {
     var maxM = st.turns ? 4 * PI : 2 * PI;
-    var a = maxM * Math.max(st.R, 1) + 0.4;
-    return { x0: sizeL.w / 2, yA: sizeL.h * 0.34, yB: sizeL.h * 0.72, a: a, ppu: (sizeL.w / 2 - 22) / a };
+    var a = maxM * (st.showOuter ? Math.max(st.R, 1) : 1) + 0.4;
+    return { x0: sizeL.w / 2, yB: st.showOuter ? sizeL.h * 0.34 : sizeL.h * 0.52, yA: sizeL.h * 0.72, a: a, ppu: (sizeL.w / 2 - 22) / a };
   }
 
   function drawAxis(c, g, y, withPi) {
@@ -222,20 +230,22 @@
     c.clearRect(0, 0, sizeL.w, sizeL.h);
 
     c.font = '700 17px sans-serif'; c.textAlign = 'left';
-    c.fillStyle = 'OUTER';
-    c.fillText('바깥 원 (r = ' + R.toFixed(1) + ')의 호  ℓ₂ = ' + R.toFixed(1) + ' × θ', 14, g.yA - 78);
+    if (st.showOuter) {
+      c.fillStyle = OUTER;
+      c.fillText('바깥 원 (r = ' + R.toFixed(1) + ')의 호  ℓ₂ = ' + R.toFixed(1) + ' × θ', 14, g.yA - 78);
+    }
     c.fillStyle = MUTED;
     c.fillText('안쪽 원 (r = 1)의 호  ℓ₁ = θ', 14, g.yB - 78);
 
-    drawAxis(c, g, g.yA, false);
+    if (st.showOuter) drawAxis(c, g, g.yA, false);
     drawAxis(c, g, g.yB, true);
 
     var th = thetaRad();
     var done = st.u >= 1;
 
     // 바깥 원 호
-    var divided = st.divT > 0;
-    var endA = drawUnroll(c, g, g.yA, R, divided ? 0.25 : 1, 1, OUTER);
+    var divided = st.showOuter && st.divT > 0;
+    var endA = st.showOuter ? drawUnroll(c, g, g.yA, R, divided ? 0.25 : 1, 1, OUTER) : null;
     if (divided) {
       var f = 1 - st.divT * (1 - 1 / R);
       var saveU = st.u; st.u = 1;
@@ -256,17 +266,17 @@
     }
     // 0 점
     c.fillStyle = '#2d3748';
-    [g.yA, g.yB].forEach(function (y) { c.beginPath(); c.arc(g.x0, y, 3.5, 0, 2 * PI); c.fill(); });
+    (st.showOuter ? [g.yA, g.yB] : [g.yB]).forEach(function (y) { c.beginPath(); c.arc(g.x0, y, 3.5, 0, 2 * PI); c.fill(); });
 
     if (st.deg > 0 || !done) {
-      mark(endA, divided && st.divT >= 1 ? 'ℓ₂ ÷ r = ' + num(th) : 'ℓ₂ = ' + num(th * R), OUTER, true);
-      mark(endB, 'θ = ' + num(th) + '  (' + degText() + ')', dirColor(), false);
+      if (st.showOuter) mark(endA, divided && st.divT >= 1 ? 'ℓ₂ ÷ r = ' + num(th) : 'ℓ₂ = ' + num(th * R), OUTER, false);
+      mark(endB, 'θ = ' + num(th) + '  (' + degText() + ')', dirColor(), true);
     }
 
     // ÷ r 완료 시 안쪽 수직선과 연결
-    if (st.divT >= 1 && done) {
+    if (st.showOuter && st.divT >= 1 && done) {
       c.strokeStyle = ACCENT; c.lineWidth = 1.5; c.setLineDash([4, 4]);
-      c.beginPath(); c.moveTo(endA.x, endA.y + 6); c.lineTo(endB.x, endB.y - 6); c.stroke(); c.setLineDash([]);
+      c.beginPath(); c.moveTo(endB.x, endB.y + 6); c.lineTo(endA.x, endA.y - 6); c.stroke(); c.setLineDash([]);
       c.fillStyle = ACCENT; c.font = '700 17px sans-serif'; c.textAlign = 'left';
       c.fillText('같은 실수!', (endA.x + endB.x) / 2 + 8, (g.yA + g.yB) / 2 + 4);
     }
@@ -282,6 +292,13 @@
     document.getElementById('rdRatio').textContent = st.showRatio
       ? num(th) + ' , ' + num(th * R / R) : '–';
     document.getElementById('rdTheta').textContent = thetaText();
+    document.getElementById('rdL2Cell').hidden = !st.showOuter;
+    document.getElementById('rdRatioCell').hidden = !st.showOuter;
+    document.getElementById('rdGrid').className = 'readouts' + (st.showOuter ? '' : ' basic');
+    document.getElementById('btnDivide').hidden = !st.showOuter;
+    document.getElementById('panelLabelC').innerHTML = st.showOuter
+      ? '단위원과 바깥 원 · 점을 <b>드래그</b>하거나 원을 <b>클릭</b>해 각을 만드세요 (바깥 원의 ↔ 를 끌면 반지름이 바뀝니다)'
+      : '단위원 · 점을 <b>드래그</b>하거나 원을 <b>클릭</b>해 각을 만드세요';
   }
 
   function draw() { drawCircle(); drawLine(); updateReadouts(); }
@@ -341,9 +358,9 @@
     var dist = Math.hypot(p.x - g.cx, p.y - g.cy);
     var hx = g.cx + st.R * g.s * Math.cos(PI / 4), hy = g.cy + st.R * g.s * Math.sin(PI / 4);
     var th = thetaRad();
-    var onOuterDot = Math.hypot(p.x - (g.cx + Math.cos(th) * st.R * g.s), p.y - (g.cy - Math.sin(th) * st.R * g.s)) < 14;
-    var onHandle = Math.hypot(p.x - hx, p.y - hy) < 16;
-    var onRing = Math.abs(dist - st.R * g.s) < 8 && !onOuterDot;
+    var onOuterDot = st.showOuter && Math.hypot(p.x - (g.cx + Math.cos(th) * st.R * g.s), p.y - (g.cy - Math.sin(th) * st.R * g.s)) < 14;
+    var onHandle = st.showOuter && Math.hypot(p.x - hx, p.y - hy) < 16;
+    var onRing = st.showOuter && Math.abs(dist - st.R * g.s) < 8 && !onOuterDot;
     cvC.setPointerCapture(ev.pointerId);
     if (onHandle || onRing) {
       st.drag = 'radius'; curl(); setRadiusFromPointer(p);
@@ -394,6 +411,14 @@
     st.dir = -st.dir;
     togNeg.classList.toggle('on', st.dir < 0);
     curl(); st.u = 1; draw();
+  });
+
+  var btnOuter = document.getElementById('btnOuter');
+  btnOuter.addEventListener('click', function () {
+    st.showOuter = !st.showOuter;
+    btnOuter.classList.toggle('on', st.showOuter);
+    btnOuter.textContent = st.showOuter ? '바깥 원 숨기기' : '원의 크기가 달라지면?';
+    stopAnim(); st.divT = 0; st.showRatio = false; st.u = 1; draw();
   });
 
   document.getElementById('btnDivide').addEventListener('click', function () {

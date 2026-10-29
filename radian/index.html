@@ -68,6 +68,7 @@
     .sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
 
     .readouts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    .readouts.basic { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .rd-cell {
       background: var(--bg);
       border: 1px solid var(--border);
@@ -97,7 +98,7 @@
   <main class="page-body">
     <div class="stage">
       <section class="stage-panel">
-        <div class="panel-label">단위원과 바깥 원 · 점을 <b>드래그</b>하거나 원을 <b>클릭</b>해 각을 만드세요 (바깥 원의 ● 를 끌면 반지름이 바뀝니다)</div>
+        <div class="panel-label" id="panelLabelC">단위원과 바깥 원 · 점을 <b>드래그</b>하거나 원을 <b>클릭</b>해 각을 만드세요 (바깥 원의 ● 를 끌면 반지름이 바뀝니다)</div>
         <div class="canvas-wrap"><canvas id="circleCanvas"></canvas></div>
       </section>
       <section class="stage-panel">
@@ -120,13 +121,14 @@
         <button class="rd-btn toggle" id="togTurns">한 바퀴 넘기기</button>
         <button class="rd-btn toggle neg" id="togNeg">음의 방향 (시계 방향)</button>
         <span class="sep"></span>
-        <button class="rd-btn primary" id="btnDivide">÷ 반지름 해보기</button>
+        <button class="rd-btn toggle" id="btnOuter">원의 크기가 달라지면?</button>
+        <button class="rd-btn primary" id="btnDivide" hidden>÷ 반지름 해보기</button>
       </div>
-      <div class="readouts">
+      <div class="readouts basic" id="rdGrid">
         <div class="rd-cell"><div class="rd-name">각도 (육십분법)</div><div class="rd-val" id="rdDeg">0°</div></div>
         <div class="rd-cell"><div class="rd-name">안쪽 원(r = 1)의 호의 길이 ℓ₁</div><div class="rd-val" id="rdL1">0</div></div>
-        <div class="rd-cell"><div class="rd-name" id="rdL2Name">바깥 원(r = 2.0)의 호의 길이 ℓ₂</div><div class="rd-val" id="rdL2">0</div></div>
-        <div class="rd-cell"><div class="rd-name">ℓ ÷ r (호의 길이 ÷ 반지름)</div><div class="rd-val" id="rdRatio">–</div></div>
+        <div class="rd-cell" id="rdL2Cell" hidden><div class="rd-name" id="rdL2Name">바깥 원(r = 2.0)의 호의 길이 ℓ₂</div><div class="rd-val" id="rdL2">0</div></div>
+        <div class="rd-cell" id="rdRatioCell" hidden><div class="rd-name">ℓ ÷ r (호의 길이 ÷ 반지름)</div><div class="rd-val" id="rdRatio">–</div></div>
         <div class="rd-cell hl"><div class="rd-name">각에 대응하는 하나의 실수 θ</div><div class="rd-val" id="rdTheta">0</div></div>
       </div>
     </div>
