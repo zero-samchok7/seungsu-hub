@@ -11,7 +11,6 @@
   var st = {
     deg: 0,          // 각의 크기(절댓값, 정수 도)
     dir: 1,          // 1: 양의 방향, -1: 음의 방향
-    turns: false,    // 한 바퀴 넘기기
     R: 2.0,          // 바깥 원 반지름
     u: 1,            // 펴짐 진행도 (0: 감김, 1: 완전히 펴짐)
     divT: 0,         // ÷ 반지름 진행도
@@ -166,7 +165,7 @@
 
   /* ---------- 오른쪽: 수직선 ---------- */
   function lineGeom() {
-    var maxM = st.turns ? 4 * PI : 2 * PI;
+    var maxM = st.deg > 360 ? 4 * PI : 2 * PI;
     var a = maxM * (st.showOuter ? Math.max(st.R, 1) : 1) + 0.4;
     return { x0: sizeL.w / 2, yB: st.showOuter ? sizeL.h * 0.34 : sizeL.h * 0.52, yA: sizeL.h * 0.72, a: a, ppu: (sizeL.w / 2 - 22) / a };
   }
@@ -298,7 +297,7 @@
     document.getElementById('btnDivide').hidden = !st.showOuter;
     document.getElementById('panelLabelC').innerHTML = st.showOuter
       ? '단위원과 바깥 원 · 점을 <b>드래그</b>하거나 원을 <b>클릭</b>해 각을 만드세요 (바깥 원의 ↔ 를 끌면 반지름이 바뀝니다)'
-      : '단위원 · 점을 <b>드래그</b>하거나 원을 <b>클릭</b>해 각을 만드세요';
+      : '단위원 · 점을 <b>드래그</b>하거나 원을 <b>클릭</b>해 각을 만드세요 (계속 돌리거나 반대로 돌려도 돼요)';
   }
 
   function draw() { drawCircle(); drawLine(); updateReadouts(); }
@@ -332,19 +331,16 @@
     var g = circleGeom();
     var phi = Math.atan2(-(p.y - g.cy), p.x - g.cx) * 180 / PI;
     if (phi < 0) phi += 360;
-    var d = st.dir === 1 ? phi : (360 - phi) % 360;
-    d = Math.round(d) % 360;
-    var prev = st.deg;
+    phi = Math.round(phi) % 360;
+    var v = phi;
     if (!first) {
-      if (!st.turns) {
-        if (prev > 270 && d < 90) d = 360;
-        else if (prev < 90 && d > 270) d = 0;
-      } else {
-        var k = Math.round((prev - d) / 360);
-        d = Math.max(0, Math.min(720, d + 360 * k));
-      }
+      // 직전 각에서 가장 가까운 같은 위치의 각을 택해 연속으로 돌린다 (360° 초과·음의 각 허용)
+      var prev = st.dir * st.deg;
+      v = phi + 360 * Math.round((prev - phi) / 360);
     }
-    st.deg = d;
+    v = Math.max(-720, Math.min(720, v));
+    st.dir = v < 0 ? -1 : 1;
+    st.deg = Math.abs(v);
   }
 
   function setRadiusFromPointer(p) {
@@ -388,7 +384,7 @@
   cvC.addEventListener('pointercancel', endDrag);
 
   /* ---------- 버튼 ---------- */
-  function goDeg(d) { st.deg = d; curl(); draw(); unroll(); }
+  function goDeg(d) { st.dir = 1; st.deg = d; curl(); draw(); unroll(); }
   Array.prototype.forEach.call(document.querySelectorAll('[data-deg]'), function (b) {
     b.addEventListener('click', function () { goDeg(parseInt(b.getAttribute('data-deg'), 10)); });
   });
@@ -397,20 +393,6 @@
   });
   document.getElementById('btnReset').addEventListener('click', function () {
     st.R = 2.0; st.deg = 0; curl(); st.u = 1; draw();
-  });
-
-  var togTurns = document.getElementById('togTurns');
-  togTurns.addEventListener('click', function () {
-    st.turns = !st.turns;
-    togTurns.classList.toggle('on', st.turns);
-    if (!st.turns && st.deg > 360) { st.deg = 360; }
-    curl(); st.u = 1; draw();
-  });
-  var togNeg = document.getElementById('togNeg');
-  togNeg.addEventListener('click', function () {
-    st.dir = -st.dir;
-    togNeg.classList.toggle('on', st.dir < 0);
-    curl(); st.u = 1; draw();
   });
 
   var btnOuter = document.getElementById('btnOuter');
