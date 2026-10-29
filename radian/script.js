@@ -165,7 +165,7 @@
 
   /* ---------- 오른쪽: 수직선 ---------- */
   function lineGeom() {
-    var maxM = st.deg > 360 ? 4 * PI : 2 * PI;
+    var maxM = Math.max(1, Math.ceil(st.deg / 360)) * 2 * PI;
     var a = maxM * (st.showOuter ? Math.max(st.R, 1) : 1) + 0.4;
     return { x0: sizeL.w / 2, yB: st.showOuter ? sizeL.h * 0.34 : sizeL.h * 0.52, yA: sizeL.h * 0.72, a: a, ppu: (sizeL.w / 2 - 22) / a };
   }
@@ -177,20 +177,21 @@
     c.fillStyle = '#4a5568';
     c.beginPath(); c.moveTo(sizeL.w - 8, y); c.lineTo(sizeL.w - 16, y - 4); c.lineTo(sizeL.w - 16, y + 4); c.fill();
     var step = 1;
-    [1, 2, 5, 10].some(function (s) { step = s; return s * g.ppu >= 34; });
+    [1, 2, 5, 10, 20].some(function (s) { step = s; return s * g.ppu >= 34; });
     c.font = '15px sans-serif'; c.textAlign = 'center';
     var n = Math.floor(g.a);
     for (var k = -n; k <= n; k++) {
       var x = g.x0 + k * g.ppu;
       c.strokeStyle = '#4a5568'; c.lineWidth = 1;
+      if (g.ppu < 10 && k % step !== 0) continue;
       c.beginPath(); c.moveTo(x, y - (k === 0 ? 6 : 4)); c.lineTo(x, y + (k === 0 ? 6 : 4)); c.stroke();
       if (k % step === 0) { c.fillStyle = MUTED; c.fillText(String(k).replace('-', '−'), x, y + 22); }
     }
     if (withPi) {
       c.font = '700 17px sans-serif';
-      var m = Math.floor(g.a / PI);
+      var m = Math.floor(g.a / PI), piStep = Math.max(1, Math.ceil(46 / (PI * g.ppu)));
       for (var j = -m; j <= m; j++) {
-        if (j === 0) continue;
+        if (j === 0 || j % piStep !== 0) continue;
         var xp = g.x0 + j * PI * g.ppu;
         c.strokeStyle = 'rgba(108,92,231,0.45)'; c.lineWidth = 1; c.setLineDash([2, 3]);
         c.beginPath(); c.moveTo(xp, y - 14); c.lineTo(xp, y + 34); c.stroke(); c.setLineDash([]);
@@ -338,7 +339,7 @@
       var prev = st.dir * st.deg;
       v = phi + 360 * Math.round((prev - phi) / 360);
     }
-    v = Math.max(-720, Math.min(720, v));
+    v = Math.max(-1800, Math.min(1800, v));
     st.dir = v < 0 ? -1 : 1;
     st.deg = Math.abs(v);
   }
