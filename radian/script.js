@@ -260,7 +260,7 @@
 
     if (st.deg > 0 || !done) {
       mark(endA, divided && st.divT >= 1 ? 'ℓ₂ ÷ r = ' + num(th) : 'ℓ₂ = ' + num(th * R), OUTER, true);
-      mark(endB, 'θ = ' + num(th), dirColor(), false);
+      mark(endB, 'θ = ' + num(th) + '  (' + degText() + ')', dirColor(), false);
     }
 
     // ÷ r 완료 시 안쪽 수직선과 연결
