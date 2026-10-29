@@ -4,6 +4,7 @@
   var POS = '#e17055';   // 양의 방향 (주황)
   var NEG = '#0984e3';   // 음의 방향 (파랑)
   var ACCENT = '#6c5ce7';
+  var OUTER = '#00a383';   // 바깥 원 (초록)
   var MUTED = '#718096';
   var BORDER = '#cbd5e0';
 
@@ -34,9 +35,11 @@
     var s = (n === 1 ? '' : n) + 'π' + (d === 1 ? '' : '/' + d);
     return s;
   }
+  function degText() { return (st.dir < 0 ? '−' : '') + (Number.isInteger(st.deg) ? st.deg : st.deg.toFixed(1)) + '°'; }
   function thetaText() {
     var t = thetaRad();
     if (st.deg === 0) return '0';
+    if (!Number.isInteger(st.deg)) return (st.dir < 0 ? '−' : '') + String(+Math.abs(t).toFixed(3));
     return (st.dir < 0 ? '−' : '') + piText(st.deg) + ' ≈ ' + Math.abs(t).toFixed(3).replace(/^/, st.dir < 0 ? '−' : '');
   }
   function num(x, d) {
@@ -75,7 +78,7 @@
     c.stroke();
 
     // 바깥 원 / 안쪽 원
-    c.strokeStyle = '#b8b2f0'; c.lineWidth = 1.5;
+    c.strokeStyle = '#8fdccb'; c.lineWidth = 1.5;
     c.beginPath(); c.arc(cx, cy, R * s, 0, 2 * PI); c.stroke();
     c.strokeStyle = BORDER; c.lineWidth = 1.5;
     c.beginPath(); c.arc(cx, cy, s, 0, 2 * PI); c.stroke();
@@ -98,10 +101,9 @@
       c.strokeStyle = dirColor();
       c.lineWidth = 6;
       c.beginPath(); c.arc(cx, cy, s + off, 0, -d * st.dir, st.dir === 1); c.stroke();
-      c.lineWidth = 4;
-      c.globalAlpha = 0.75;
+      c.strokeStyle = OUTER;
+      c.lineWidth = 5;
       c.beginPath(); c.arc(cx, cy, R * s + off, 0, -d * st.dir, st.dir === 1); c.stroke();
-      c.globalAlpha = 1;
     }
 
     // 반지름 선
@@ -123,22 +125,22 @@
     c.fillStyle = MUTED; c.textAlign = 'right'; c.fillText('O', cx - 8, cy + 20);
 
     // 움직이는 점 (안쪽 · 바깥)
-    function dot(rad, r, big) {
-      c.fillStyle = '#fff'; c.strokeStyle = dirColor(); c.lineWidth = 3;
+    function dot(rad, r, col) {
+      c.fillStyle = '#fff'; c.strokeStyle = col; c.lineWidth = 3;
       c.beginPath(); c.arc(cx + ex * rad * s, cy + ey * rad * s, r, 0, 2 * PI); c.fill(); c.stroke();
     }
-    dot(R, 8); dot(1, 12);
+    dot(R, 8, OUTER); dot(1, 12, dirColor());
 
     // 반지름 라벨
     c.font = '700 17px sans-serif'; c.textAlign = 'left';
     c.fillStyle = MUTED;
     c.fillText('r = 1', cx + 8, cy - 10);
-    c.fillStyle = '#7d70e8';
+    c.fillStyle = OUTER;
     c.fillText('r = ' + R.toFixed(1), cx + R * s * Math.cos(-PI / 4 + 0.0) - 8, cy + R * s * Math.sin(PI / 4) + 34);
 
     // 반지름 조절 손잡이 (오른쪽 아래)
     var hx = cx + R * s * Math.cos(PI / 4), hy = cy + R * s * Math.sin(PI / 4);
-    c.fillStyle = ACCENT; c.strokeStyle = '#fff'; c.lineWidth = 2.5;
+    c.fillStyle = OUTER; c.strokeStyle = '#fff'; c.lineWidth = 2.5;
     c.beginPath(); c.arc(hx, hy, 12, 0, 2 * PI); c.fill(); c.stroke();
     c.fillStyle = '#fff'; c.font = '700 15px sans-serif'; c.textAlign = 'center';
     c.fillText('↔', hx, hy + 5);
@@ -147,7 +149,7 @@
     if (st.deg > 0) {
       c.fillStyle = dirColor(); c.font = '700 22px sans-serif'; c.textAlign = 'left';
       var turnsN = Math.floor(st.deg / 360), rest = st.deg - turnsN * 360;
-      var label = (st.dir < 0 ? '−' : '') + st.deg + '°';
+      var label = degText();
       if (turnsN > 0 && rest > 0) label += '  (' + turnsN + '바퀴 + ' + rest + '°)';
       else if (turnsN > 0) label += '  (' + turnsN + '바퀴)';
       c.fillText(label, 14, 30);
@@ -193,13 +195,13 @@
   }
 
   // r인 원에서 잰 호(각 θ)를 u 만큼 편 곡선. 반환: 끝점 좌표
-  function drawUnroll(c, g, y, r, alpha, lenScale) {
+  function drawUnroll(c, g, y, r, alpha, lenScale, color) {
     var ell = thetaRad() * r * lenScale;
     var L = Math.abs(ell), sgn = ell < 0 ? -1 : 1;
     var kappa = (1 - st.u) / r;
     var N = Math.max(2, Math.ceil(L * g.ppu / 3));
     var ex = g.x0, ey = y;
-    c.strokeStyle = dirColor(); c.lineWidth = 6; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.strokeStyle = color; c.lineWidth = 6; c.lineCap = 'round'; c.lineJoin = 'round';
     c.globalAlpha = alpha;
     c.beginPath();
     for (var i = 0; i <= N; i++) {
@@ -220,7 +222,7 @@
     c.clearRect(0, 0, sizeL.w, sizeL.h);
 
     c.font = '700 17px sans-serif'; c.textAlign = 'left';
-    c.fillStyle = '#7d70e8';
+    c.fillStyle = 'OUTER';
     c.fillText('바깥 원 (r = ' + R.toFixed(1) + ')의 호  ℓ₂ = ' + R.toFixed(1) + ' × θ', 14, g.yA - 78);
     c.fillStyle = MUTED;
     c.fillText('안쪽 원 (r = 1)의 호  ℓ₁ = θ', 14, g.yB - 78);
@@ -233,15 +235,15 @@
 
     // 바깥 원 호
     var divided = st.divT > 0;
-    var endA = drawUnroll(c, g, g.yA, R, divided ? 0.25 : 1, 1);
+    var endA = drawUnroll(c, g, g.yA, R, divided ? 0.25 : 1, 1, OUTER);
     if (divided) {
       var f = 1 - st.divT * (1 - 1 / R);
       var saveU = st.u; st.u = 1;
-      endA = drawUnroll(c, g, g.yA, R, 1, f);
+      endA = drawUnroll(c, g, g.yA, R, 1, f, OUTER);
       st.u = saveU;
     }
     // 안쪽 원 호
-    var endB = drawUnroll(c, g, g.yB, 1, 1, 1);
+    var endB = drawUnroll(c, g, g.yB, 1, 1, 1, dirColor());
 
     // 끝점 표시
     function mark(p, text, color, up) {
@@ -257,7 +259,7 @@
     [g.yA, g.yB].forEach(function (y) { c.beginPath(); c.arc(g.x0, y, 3.5, 0, 2 * PI); c.fill(); });
 
     if (st.deg > 0 || !done) {
-      mark(endA, divided && st.divT >= 1 ? 'ℓ₂ ÷ r = ' + num(th) : 'ℓ₂ = ' + num(th * R), dirColor(), true);
+      mark(endA, divided && st.divT >= 1 ? 'ℓ₂ ÷ r = ' + num(th) : 'ℓ₂ = ' + num(th * R), OUTER, true);
       mark(endB, 'θ = ' + num(th), dirColor(), false);
     }
 
@@ -273,7 +275,7 @@
   /* ---------- 읽기값 ---------- */
   function updateReadouts() {
     var th = thetaRad(), R = st.R;
-    document.getElementById('rdDeg').textContent = (st.dir < 0 ? '−' : '') + st.deg + '°';
+    document.getElementById('rdDeg').textContent = degText();
     document.getElementById('rdL1').textContent = num(th);
     document.getElementById('rdL2Name').textContent = '바깥 원(r = ' + R.toFixed(1) + ')의 호의 길이 ℓ₂';
     document.getElementById('rdL2').textContent = num(th * R);
@@ -372,6 +374,9 @@
   function goDeg(d) { st.deg = d; curl(); draw(); unroll(); }
   Array.prototype.forEach.call(document.querySelectorAll('[data-deg]'), function (b) {
     b.addEventListener('click', function () { goDeg(parseInt(b.getAttribute('data-deg'), 10)); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-rad]'), function (b) {
+    b.addEventListener('click', function () { goDeg(parseFloat(b.getAttribute('data-rad')) * 180 / PI); });
   });
   document.getElementById('btnReset').addEventListener('click', function () {
     st.R = 2.0; st.deg = 0; curl(); st.u = 1; draw();
