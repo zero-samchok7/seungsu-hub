@@ -259,9 +259,12 @@
     function mark(p, text, color, up) {
       c.fillStyle = '#fff'; c.strokeStyle = color; c.lineWidth = 3;
       c.beginPath(); c.arc(p.x, p.y, 6, 0, 2 * PI); c.fill(); c.stroke();
-      if (done && text) {
+      if (text) {
         c.fillStyle = color; c.font = '700 17px sans-serif'; c.textAlign = 'center';
-        c.fillText(text, p.x, p.y + (up ? -16 : 40));
+        // 화면 밖으로 잘리지 않게 가로 위치를 안쪽으로 보정
+        var hw = c.measureText(text).width / 2 + 8;
+        var tx = Math.max(hw, Math.min(sizeL.w - hw, p.x));
+        c.fillText(text, tx, p.y + (up ? -16 : 40));
       }
     }
     // 0 점
