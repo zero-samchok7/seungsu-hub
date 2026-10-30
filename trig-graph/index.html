@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>삼각함수의 그래프</title>
+  <link rel="stylesheet" href="../common.css">
+  <style>
+    [hidden] { display: none !important; }
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 8px 20px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text-muted);
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .page-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    .canvas-wrap { position: relative; flex: 1; min-height: 0; background: var(--panel-bg); }
+    .canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+    #mainCanvas { cursor: crosshair; }
+
+    .ctrl-bar {
+      background: var(--panel-bg);
+      border-top: 1px solid var(--border);
+      padding: 10px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .ctrl-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .ctrl-label { font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-right: 2px; }
+    .rd-btn {
+      padding: 8px 18px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .rd-btn:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+    .rd-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .rd-btn.primary:hover { background: var(--accent-dark); color: #fff; }
+    .fn-bar { display: inline-flex; }
+    .fn-btn {
+      padding: 8px 22px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .fn-btn:first-child { border-radius: 8px 0 0 8px; }
+    .fn-btn:last-child { border-radius: 0 8px 8px 0; }
+    .fn-btn:not(:first-child) { border-left: none; }
+    .fn-btn:not(:first-child):not(:last-child) { border-radius: 0; }
+    .fn-btn.active { color: #fff; }
+    .fn-btn[data-fn="sin"].active { background: #e17055; border-color: #e17055; }
+    .fn-btn[data-fn="cos"].active { background: #0984e3; border-color: #0984e3; }
+    .fn-btn[data-fn="tan"].active { background: #00a383; border-color: #00a383; }
+    .sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+
+    .slider-row { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 260px; }
+    .slider-name { font-size: 1.3rem; font-weight: 700; width: 1.6em; text-align: right; font-style: italic; }
+    .slider-row input[type=range] { flex: 1; height: 32px; accent-color: var(--accent); cursor: pointer; }
+    .slider-val { font-size: 1.3rem; font-weight: 700; width: 3.2em; color: var(--accent-dark); }
+
+    .readouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .readouts.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .rd-cell {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      min-width: 0;
+    }
+    .rd-name { font-size: 0.95rem; color: var(--text-muted); font-weight: 700; }
+    .rd-val { font-size: 1.45rem; font-weight: 700; margin-top: 2px; overflow-wrap: anywhere; }
+    .rd-cell.hl { background: var(--accent-light); border-color: var(--accent); }
+    .rd-cell.hl .rd-val { color: var(--accent-dark); }
+
+    @media (max-width: 760px) {
+      body { overflow: auto; height: auto; min-height: 100dvh; }
+      .canvas-wrap { flex: none; height: 360px; }
+      .readouts, .readouts.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <a href="../index.html" class="back-link">← 목록</a>
+    <span class="page-title">삼각함수의 그래프</span>
+  </header>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab1">① y = sin x, cos x, tan x</button>
+    <button class="tab-btn" id="tab2">② y = a sin bx, a cos bx, a tan bx</button>
+  </div>
+
+  <main class="page-body">
+    <div class="canvas-wrap"><canvas id="mainCanvas"></canvas></div>
+
+    <div class="ctrl-bar">
+      <div class="ctrl-row">
+        <span class="ctrl-label">함수</span>
+        <span class="fn-bar">
+          <button class="fn-btn active" data-fn="sin">sin</button>
+          <button class="fn-btn" data-fn="cos">cos</button>
+          <button class="fn-btn" data-fn="tan">tan</button>
+        </span>
+        <span class="tab1-only">
+          <span class="sep"></span>
+          <button class="rd-btn primary" id="btnPlay">▶ 재생</button>
+          <button class="rd-btn" id="btnReset">처음으로</button>
+          <span class="ctrl-label" style="margin-left:8px">점을 드래그하거나 그래프를 클릭해도 돼요</span>
+        </span>
+      </div>
+
+      <div class="ctrl-row tab2-only" hidden>
+        <div class="slider-row">
+          <span class="slider-name">a</span>
+          <input type="range" id="sliderA" min="-3" max="3" step="0.1" value="1">
+          <span class="slider-val" id="valA">1</span>
+        </div>
+        <div class="slider-row">
+          <span class="slider-name">b</span>
+          <input type="range" id="sliderB" min="0.5" max="4" step="0.1" value="1">
+          <span class="slider-val" id="valB">1</span>
+        </div>
+        <button class="rd-btn" id="btnAB">a, b를 1로</button>
+      </div>
+
+      <div class="readouts tab1-only">
+        <div class="rd-cell"><div class="rd-name">각 θ (라디안)</div><div class="rd-val" id="rdRad">0</div></div>
+        <div class="rd-cell"><div class="rd-name">각 θ (육십분법)</div><div class="rd-val" id="rdDeg">0°</div></div>
+        <div class="rd-cell hl"><div class="rd-name" id="rdFnName">sin θ</div><div class="rd-val" id="rdFn">0</div></div>
+      </div>
+
+      <div class="readouts four tab2-only" hidden>
+        <div class="rd-cell hl"><div class="rd-name">식</div><div class="rd-val" id="rdExpr">y = sin x</div></div>
+        <div class="rd-cell"><div class="rd-name">최댓값</div><div class="rd-val" id="rdMax">1</div></div>
+        <div class="rd-cell"><div class="rd-name">최솟값</div><div class="rd-val" id="rdMin">−1</div></div>
+        <div class="rd-cell"><div class="rd-name" id="rdPeriodName">주기 2π/|b|</div><div class="rd-val" id="rdPeriod">2π</div></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
