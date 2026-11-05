@@ -7,21 +7,22 @@
   <link rel="stylesheet" href="../common.css">
   <style>
     [hidden] { display: none !important; }
-    .page-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-    .canvas-wrap { position: relative; flex: 1; min-height: 0; background: var(--panel-bg); }
+    .page-body { display: flex; flex-direction: row; flex: 1; min-height: 0; }
+    .canvas-wrap { position: relative; flex: 1; min-width: 0; background: var(--panel-bg); }
     .canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
-    #mainCanvas { cursor: grab; }
-    #mainCanvas.dragging { cursor: grabbing; }
 
     .ctrl-bar {
+      width: 360px;
       background: var(--panel-bg);
-      border-top: 1px solid var(--border);
-      padding: 10px 14px 12px;
+      border-left: 1px solid var(--border);
+      padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 14px;
       flex-shrink: 0;
+      overflow-y: auto;
     }
+    #barCand { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
     .ctrl-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .ctrl-label { font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-right: 2px; }
     .rd-btn {
@@ -55,9 +56,25 @@
     .seg-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
     .seg-btn[data-fn="sin"].active { background: #e17055; border-color: #e17055; }
     .seg-btn[data-fn="cos"].active { background: #0984e3; border-color: #0984e3; }
+    .cand-btn {
+      padding: 8px 18px;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .cand-btn[data-fn="sin"]:hover, .cand-btn[data-fn="sin"].active { border-color: #e8590c; background: #fff0e6; color: #c2410c; }
+    .cand-btn[data-fn="cos"]:hover, .cand-btn[data-fn="cos"].active { border-color: #1971c2; background: #e7f1fb; color: #1558a0; }
+    .cand-btn.right { border-color: #099268 !important; background: #e6f7f1 !important; color: #00836a !important; }
+    .cand-btn.wrong { border-color: #c92a2a !important; background: #fff0f0 !important; color: #c92a2a !important; }
+    .rd-cell.bad .rd-val { color: #c92a2a; }
     .sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
 
-    .readouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .readouts { display: grid; grid-template-columns: 1fr; gap: 8px; }
     .rd-cell {
       background: var(--bg);
       border: 1px solid var(--border);
@@ -67,15 +84,29 @@
     }
     .rd-name { font-size: 0.95rem; color: var(--text-muted); font-weight: 700; }
     .rd-val { font-size: 1.45rem; font-weight: 700; margin-top: 2px; overflow-wrap: anywhere; }
+    .rd-cell.target-cell { background: #eef1f8; border-color: #1b2a4e; }
+    .rd-cell.target-cell .rd-val { color: #1b2a4e; }
+    .divider { border: none; border-top: 2px dashed var(--border); margin: 2px 0; }
     .rd-cell.hl { background: var(--accent-light); border-color: var(--accent); }
     .rd-cell.hl .rd-val { color: var(--accent-dark); }
     .rd-cell.ok { background: #e6f7f1; border-color: #00a383; }
     .rd-cell.ok .rd-val { color: #00836a; }
+    .rd-cell.ok { animation: pop 0.6s ease-out, glow 1.2s ease-in-out 3; }
+    @keyframes pop {
+      0% { transform: scale(0.8); }
+      50% { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 0 rgba(9,146,104,0); }
+      50% { box-shadow: 0 0 18px 4px rgba(9,146,104,0.55); }
+    }
 
     @media (max-width: 760px) {
       body { overflow: auto; height: auto; min-height: 100dvh; }
+      .page-body { flex-direction: column; }
       .canvas-wrap { flex: none; height: 320px; }
-      .readouts { grid-template-columns: 1fr; }
+      .ctrl-bar { width: auto; border-left: none; border-top: 1px solid var(--border); overflow-y: visible; }
     }
   </style>
 </head>
@@ -90,12 +121,16 @@
 
     <div class="ctrl-bar">
       <div class="ctrl-row">
+        <button class="rd-btn" id="btnReset">처음으로</button>
+      </div>
+      <div class="ctrl-row">
         <span class="ctrl-label">함수</span>
         <span class="seg-bar" id="barFn">
           <button class="seg-btn active" data-fn="sin">sin</button>
           <button class="seg-btn" data-fn="cos">cos</button>
         </span>
-        <span class="sep"></span>
+      </div>
+      <div class="ctrl-row">
         <span class="ctrl-label">상수</span>
         <span class="seg-bar" id="barC">
           <button class="seg-btn" data-c="1">π/2</button>
@@ -103,24 +138,30 @@
           <button class="seg-btn" data-c="3">3π/2</button>
           <button class="seg-btn" data-c="4">2π</button>
         </span>
-        <span class="sep"></span>
+      </div>
+      <div class="ctrl-row">
         <span class="ctrl-label">부호</span>
         <span class="seg-bar" id="barS">
           <button class="seg-btn active" data-s="1">+</button>
           <button class="seg-btn" data-s="-1">−</button>
         </span>
-        <span class="sep"></span>
-        <button class="rd-btn primary" id="btnReveal">결과 확인</button>
-        <button class="rd-btn" id="btnReset">처음으로</button>
       </div>
+      <div class="rd-cell target-cell"><div class="rd-name">남색 그래프</div><div class="rd-val" id="rdTarget"></div></div>
+
+      <hr class="divider">
+
       <div class="ctrl-row">
-        <span class="ctrl-label">점선 그래프를 좌우로 드래그해서 보라색 그래프에 겹쳐 보세요 (π/2 단위로 달라붙어요)</span>
+        <span class="ctrl-label">남색 그래프는 어떤 식과 같을까요?</span>
+        <span id="barCand">
+          <button class="cand-btn" data-fn="sin" data-sg="1">sin x</button>
+          <button class="cand-btn" data-fn="sin" data-sg="-1">−sin x</button>
+          <button class="cand-btn" data-fn="cos" data-sg="1">cos x</button>
+          <button class="cand-btn" data-fn="cos" data-sg="-1">−cos x</button>
+        </span>
       </div>
 
       <div class="readouts">
-        <div class="rd-cell hl"><div class="rd-name">보라색 그래프 (목표)</div><div class="rd-val" id="rdTarget"></div></div>
-        <div class="rd-cell"><div class="rd-name">점선 그래프 (내가 옮긴 것)</div><div class="rd-val" id="rdDrag"></div></div>
-        <div class="rd-cell" id="cellResult"><div class="rd-name" id="rdResName">겹쳤나요?</div><div class="rd-val" id="rdResult">—</div></div>
+        <div class="rd-cell" id="cellResult"><div class="rd-name" id="rdResName">결과</div><div class="rd-val" id="rdResult">—</div></div>
       </div>
     </div>
   </main>

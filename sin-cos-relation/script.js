@@ -1,25 +1,26 @@
 /* ===== 사인과 코사인의 관계 ===== */
 (function () {
   var PI = Math.PI, HALF = PI / 2;
-  var COL = { sin: '#e17055', cos: '#0984e3' };
-  var ACCENT = '#6c5ce7';
+  var COL = { sin: '#e8590c', cos: '#1971c2' };
+  var TARGET = '#1b2a4e';
+  var OK = '#099268';
   var MUTED = '#718096';
   var AXIS = '#4a5568';
   var GRID = '#e2e8f0';
 
   var XMAX = 2 * PI + 0.3;     // 가로 범위: −XMAX ~ XMAX
   var YMAX = 1.5;
-  var MAX_W = 760, MAX_H = 340;   // 그래프 영역 최대 크기(px)
-  var SNAP = 0.22;            // π/2 의 배수에 이만큼 가까우면 달라붙는다
+  var MAX_W = 1300, MAX_H = 480;   // 그래프 영역 최대 크기(px)
 
   var st = {
     fn: 'sin',
     c: 2,        // 상수 (π/2 의 몇 배): 1 → π/2, 2 → π, 3 → 3π/2, 4 → 2π
     s: 1,        // 부호 (+1 / −1)
-    off: 0,      // 점선 그래프가 오른쪽으로 옮겨진 양 (라디안)
-    revealed: false,
-    drag: null
+    cand: null,  // 고른 후보: { fn: 'sin' | 'cos', sg: 1 | −1 }
+    checked: null   // 고른 답의 결과: null(아직) | 'ok' | 'bad'
   };
+  var parts = [];       // 색종이 조각들
+  var CONFETTI = ['#e8590c', '#1971c2', '#099268', '#f59f00', '#ae3ec9', '#e64980'];
 
   var cv = document.getElementById('mainCanvas');
   var c = cv.getContext('2d');
@@ -28,7 +29,6 @@
   /* ---------- 수식 ---------- */
   function fn(name, x) { return name === 'sin' ? Math.sin(x) : Math.cos(x); }
   function target(x) { return fn(st.fn, st.c * HALF + st.s * x); }
-  function dragged(x) { return fn(st.fn, x - st.off); }
 
   function gcd(p, q) { return q ? gcd(q, p % q) : Math.abs(p); }
   // n × (π/2) 를 분수 × π 꼴로
@@ -42,43 +42,14 @@
   function targetText() {
     return 'y = ' + st.fn + '(' + piFrac(st.c) + (st.s > 0 ? ' + x' : ' − x') + ')';
   }
+  function candText(cd) { return (cd.sg < 0 ? '−' : '') + cd.fn + ' x'; }
 
-  // 지금 점선 그래프가 π/2 의 배수 위치에 있으면 그 배수(정수), 아니면 null
-  function snappedN() {
-    var n = Math.round(st.off / HALF);
-    return Math.abs(st.off - n * HALF) < 1e-9 ? n : null;
-  }
-  function dragText() {
-    var n = snappedN();
-    if (n === null) return '맞춰 보세요';
-    n = -n;   // 오른쪽으로 옮긴 양 → f(x + k) 의 k
-    if (n === 0) return 'y = ' + st.fn + ' x';
-    return 'y = ' + st.fn + '(x ' + (n > 0 ? '+ ' : '− ') + piFrac(Math.abs(n)) + ')';
-  }
-
-  // 두 그래프가 겹치는지
-  function matches() {
+  function sameGraph(cd) {
     for (var x = -XMAX; x <= XMAX; x += 0.1) {
-      if (Math.abs(target(x) - dragged(x)) > 1e-6) return false;
+      if (Math.abs(target(x) - cd.sg * fn(cd.fn, x)) > 1e-6) return false;
     }
     return true;
   }
-
-  // 선택한 식과 같은 식 (±sin x, ±cos x)
-  function resultText() {
-    var names = ['sin', 'cos'], signs = [1, -1];
-    for (var i = 0; i < 2; i++) {
-      for (var j = 0; j < 2; j++) {
-        var ok = true;
-        for (var x = -3; x <= 3; x += 0.37) {
-          if (Math.abs(target(x) - signs[j] * fn(names[i], x)) > 1e-9) { ok = false; break; }
-        }
-        if (ok) return (signs[j] < 0 ? '−' : '') + names[i] + ' x';
-      }
-    }
-    return '?';
-  }
-
   /* ---------- 캔버스 ---------- */
   function resize() {
     var r = cv.parentElement.getBoundingClientRect();
@@ -116,9 +87,8 @@
     c.beginPath(); c.moveTo(x, y2 - 6); c.lineTo(x - 4.5, y2 + 4); c.lineTo(x + 4.5, y2 + 4); c.fill();
   }
 
-  function plot(g, fy, color, lw, dash) {
-    c.strokeStyle = color; c.lineWidth = lw; c.lineJoin = 'round';
-    c.setLineDash(dash || []);
+  function plot(g, fy, color, lw) {
+    c.strokeStyle = color; c.lineWidth = lw; c.lineJoin = 'round'; c.lineCap = 'round';
     c.beginPath();
     var n = 600;
     for (var i = 0; i <= n; i++) {
@@ -126,7 +96,6 @@
       if (i === 0) c.moveTo(g.X(x), g.Y(fy(x))); else c.lineTo(g.X(x), g.Y(fy(x)));
     }
     c.stroke();
-    c.setLineDash([]);
   }
 
   function draw() {
@@ -159,32 +128,71 @@
     c.fillText('O', g.x0 - 8, g.y0 + 20);
     c.textAlign = 'left'; c.fillText('x', g.right - 12, g.y0 - 10);
 
-    // 목표(보라색 실선) → 점선 그래프 (위에 덮음)
-    plot(g, target, ACCENT, 6);
-    plot(g, dragged, COL[st.fn], 3.5, [9, 7]);
+    // 목표(굵은 남색, 겹치면 초록) 위에 고른 후보를 더 가늘게 덮는다
+    var match = st.checked === 'ok';
+    if (match) { c.shadowColor = OK; c.shadowBlur = 18; }
+    plot(g, target, match ? OK : TARGET, 6);
+    c.shadowBlur = 0;
+    drawParts();
+  }
+
+  /* ---------- 정답 축하 효과 (색종이) ---------- */
+  function burst() {
+    for (var i = 0; i < 90; i++) {
+      var left = i % 2 === 0;
+      parts.push({
+        x: left ? 0 : W, y: H * 0.75,
+        vx: (left ? 1 : -1) * (3 + Math.random() * 9), vy: -(8 + Math.random() * 12),
+        w: 6 + Math.random() * 6, h: 4 + Math.random() * 5,
+        rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4,
+        col: CONFETTI[i % CONFETTI.length], life: 0
+      });
+    }
+    if (parts.length === 90) requestAnimationFrame(tick);
+  }
+  function drawParts() {
+    parts.forEach(function (p) {
+      c.save(); c.translate(p.x, p.y); c.rotate(p.rot);
+      c.globalAlpha = Math.max(0, 1 - p.life / 110);
+      c.fillStyle = p.col; c.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      c.restore();
+    });
+  }
+  function tick() {
+    parts.forEach(function (p) {
+      p.vy += 0.35; p.vx *= 0.99;
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life++;
+    });
+    parts = parts.filter(function (p) { return p.life < 110 && p.y < H + 20; });
+    draw();
+    if (parts.length) requestAnimationFrame(tick);
   }
 
   /* ---------- 표시 갱신 ---------- */
   function update() {
     document.getElementById('rdTarget').textContent = targetText();
-    document.getElementById('rdDrag').textContent = dragText();
 
     var cell = document.getElementById('cellResult');
     var name = document.getElementById('rdResName');
     var val = document.getElementById('rdResult');
     cell.className = 'rd-cell';
-    if (st.revealed) {
-      name.textContent = '결과';
-      val.textContent = targetText().replace('y = ', '') + ' = ' + resultText();
-      cell.classList.add('hl');
-    } else if (snappedN() !== null && matches()) {
-      name.textContent = '겹쳤나요?';
-      val.textContent = '겹쳤어요! 🎉';
+    name.textContent = '결과';
+    if (st.checked === 'ok') {
+      val.textContent = '정답이에요! 🎉  ' + targetText().replace('y = ', '') + ' = ' + candText(st.cand);
       cell.classList.add('ok');
+    } else if (st.checked === 'bad') {
+      val.textContent = '(' + candText(st.cand) + ')은 아니에요. 다시 골라 보세요';
+      cell.classList.add('bad');
     } else {
-      name.textContent = '겹쳤나요?';
       val.textContent = '—';
     }
+
+    var btns = document.querySelectorAll('#barCand .cand-btn');
+    Array.prototype.forEach.call(btns, function (b) {
+      var on = st.cand && b.getAttribute('data-fn') === st.cand.fn && +b.getAttribute('data-sg') === st.cand.sg;
+      b.classList.toggle('right', !!on && st.checked === 'ok');
+      b.classList.toggle('wrong', !!on && st.checked === 'bad');
+    });
     draw();
   }
 
@@ -196,7 +204,7 @@
         Array.prototype.forEach.call(btns, function (o) { o.classList.remove('active'); });
         b.classList.add('active');
         apply(b.getAttribute(attr));
-        st.off = 0; st.revealed = false;
+        st.cand = null; st.checked = null;
         update();
       });
     });
@@ -205,32 +213,17 @@
   bindBar('barC', 'data-c', function (v) { st.c = +v; });
   bindBar('barS', 'data-s', function (v) { st.s = +v; });
 
-  document.getElementById('btnReveal').addEventListener('click', function () {
-    st.revealed = true; update();
+  Array.prototype.forEach.call(document.querySelectorAll('#barCand .cand-btn'), function (b) {
+    b.addEventListener('click', function () {
+      st.cand = { fn: b.getAttribute('data-fn'), sg: +b.getAttribute('data-sg') };
+      st.checked = sameGraph(st.cand) ? 'ok' : 'bad';
+      update();
+      if (st.checked === 'ok') burst();
+    });
   });
   document.getElementById('btnReset').addEventListener('click', function () {
-    st.off = 0; st.revealed = false; update();
+    st.cand = null; st.checked = null; update();
   });
-
-  /* ---------- 드래그 ---------- */
-  function setOff(raw) {
-    raw = Math.max(-2 * PI, Math.min(2 * PI, raw));
-    var n = Math.round(raw / HALF);
-    st.off = Math.abs(raw - n * HALF) < SNAP ? n * HALF : raw;
-  }
-  cv.addEventListener('pointerdown', function (e) {
-    st.drag = { x: e.clientX, off0: st.off };
-    cv.setPointerCapture(e.pointerId);
-    cv.classList.add('dragging');
-  });
-  cv.addEventListener('pointermove', function (e) {
-    if (!st.drag) return;
-    setOff(st.drag.off0 + (e.clientX - st.drag.x) / geom().px);
-    update();
-  });
-  function endDrag() { st.drag = null; cv.classList.remove('dragging'); }
-  cv.addEventListener('pointerup', endDrag);
-  cv.addEventListener('pointercancel', endDrag);
 
   update();
   resize();
